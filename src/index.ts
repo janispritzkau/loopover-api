@@ -14,7 +14,7 @@ const app = express()
 
 app.use(cors())
 
-app.get("/token/discord", (req, res, next) => (async () => {
+app.get("/authenticate/discord", (req, res, next) => (async () => {
   let response = await fetch(`https://discordapp.com/api/oauth2/token?${new URLSearchParams({
     grant_type: "authorization_code",
     code: req.query.code,
@@ -45,7 +45,7 @@ app.get("/token/discord", (req, res, next) => (async () => {
   })
 })().catch(next))
 
-app.get("/token/google", (req, res, next) => (async () => {
+app.get("/authenticate/google", (req, res, next) => (async () => {
   let response = await fetch(`https://oauth2.googleapis.com/token?${new URLSearchParams({
     grant_type: "authorization_code",
     code: req.query.code,
