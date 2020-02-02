@@ -19,7 +19,7 @@ async function main() {
   const solves = await db.createCollection("solves")
   const sessions = await db.createCollection("sessions")
 
-  solves.createIndex({ event: 1, user: 1 })
+  solves.createIndex({ event: 1, user: 1, startTime: -1 })
   sessions.createIndex({ token: 1 })
 
   app.post("/authenticate/google", asyncHandler(async (req, res) => {
@@ -44,17 +44,14 @@ async function main() {
     if (!response.ok) throw new Error(response.statusText)
     const userinfo = await response.json()
 
-    let user = await users.findOne({ provider: "google", uid: userinfo.sub })
-    if (!user) {
-      user = (await users.insertOne({
-        name: userinfo.name,
-        provider: "google",
-        uid: userinfo.sub,
-        avatarUrl: userinfo.picture,
-        access_token: token.access_token,
-        refresh_token: token.refresh_token
-      })).ops[0]
-    }
+    const user = (await users.findOneAndReplace({ provider: "google", uid: userinfo.sub }, {
+      name: userinfo.name,
+      provider: "google",
+      uid: userinfo.sub,
+      avatarUrl: userinfo.picture,
+      access_token: token.access_token,
+      refresh_token: token.refresh_token
+    }, { upsert: true })).value
 
     const cookieToken = crypto.randomBytes(16).toString("base64")
     sessions.insertOne({ token: cookieToken, user: user._id })
@@ -88,19 +85,16 @@ async function main() {
     if (!response.ok) throw new Error(response.statusText)
     const me = await response.json()
 
-    let user = await users.findOne({ provider: "discord", uid: me.id })
-    if (!user) {
-      user = (await users.insertOne({
-        name: `${me.username}#${me.discriminator}`,
-        provider: "discord",
-        uid: me.id,
-        avatarUrl: me.avatar
-          ? `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png`
-          : `https://cdn.discordapp.com/embed/avatars/${me.discriminator % 5}.png`,
-        access_token: token.access_token,
-        refresh_token: token.refresh_token
-      })).ops[0]
-    }
+    const user = (await users.findOneAndReplace({ provider: "discord", uid: me.id }, {
+      name: `${me.username}#${me.discriminator}`,
+      provider: "discord",
+      uid: me.id,
+      avatarUrl: me.avatar
+        ? `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png`
+        : `https://cdn.discordapp.com/embed/avatars/${me.discriminator % 5}.png`,
+      access_token: token.access_token,
+      refresh_token: token.refresh_token
+    }, { upsert: true })).value
 
     const cookieToken = crypto.randomBytes(16).toString("base64")
     sessions.insertOne({ token: cookieToken, user: user._id })
@@ -117,6 +111,7 @@ async function main() {
     if (match = (req.headers.authorization || "").match(/^Bearer (.+)/)) {
       sessions.findOne({ token: match[1] }).then(session => {
         if (!session) return res.status(401).end()
+        sessions.updateOne({ token: match![1] }, { $set: { lastUsed: Date.now() } })
         res.locals.token = session.token
         res.locals.uid = session.user
         next()
