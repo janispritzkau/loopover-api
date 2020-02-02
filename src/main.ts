@@ -19,7 +19,11 @@ async function main() {
   const solves = await db.createCollection("solves")
   const sessions = await db.createCollection("sessions")
 
-  solves.createIndex({ event: 1, user: 1, startTime: 1 })
+  await solves.dropIndexes()
+  solves.createIndex({ event: 1 })
+  solves.createIndex({ user: 1 })
+  solves.createIndex({ startTime: 1 })
+
   sessions.createIndex({ token: 1 })
 
   app.post("/authenticate/google", asyncHandler(async (req, res) => {
