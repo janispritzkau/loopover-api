@@ -19,7 +19,7 @@ async function main() {
   const solves = await db.createCollection("solves")
   const sessions = await db.createCollection("sessions")
 
-  solves.createIndex({ event: 1, user: 1, startTime: -1 })
+  solves.createIndex({ event: 1, user: 1, startTime: 1 })
   sessions.createIndex({ token: 1 })
 
   app.post("/authenticate/google", asyncHandler(async (req, res) => {
@@ -54,7 +54,7 @@ async function main() {
     }, { upsert: true })).value
 
     const cookieToken = crypto.randomBytes(16).toString("base64")
-    sessions.insertOne({ token: cookieToken, user: user._id })
+    await sessions.insertOne({ token: cookieToken, user: user._id })
 
     res.json({
       name: user.name,
@@ -97,7 +97,7 @@ async function main() {
     }, { upsert: true })).value
 
     const cookieToken = crypto.randomBytes(16).toString("base64")
-    sessions.insertOne({ token: cookieToken, user: user._id })
+    await sessions.insertOne({ token: cookieToken, user: user._id })
 
     res.json({
       name: user.name,
