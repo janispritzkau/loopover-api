@@ -12,7 +12,10 @@ async function main() {
   const app = express()
   app.use(cors())
 
-  const mongoClient = await MongoClient.connect("mongodb://localhost:27017", { useUnifiedTopology: true })
+  const mongoClient = await MongoClient.connect("mongodb://localhost:27017", {
+    useUnifiedTopology: true
+  })
+
   const db = mongoClient.db("loopover")
 
   const users = await db.createCollection("users")
@@ -48,14 +51,16 @@ async function main() {
     if (!response.ok) throw new Error(response.statusText)
     const userinfo = await response.json()
 
-    const user = (await users.findOneAndReplace({ provider: "google", uid: userinfo.sub }, {
-      name: userinfo.name,
-      provider: "google",
-      uid: userinfo.sub,
-      avatarUrl: userinfo.picture,
-      access_token: token.access_token,
-      refresh_token: token.refresh_token
-    }, { upsert: true })).value
+    const user = (await users.findOneAndUpdate({ provider: "google", uid: userinfo.sub }, {
+      $set: {
+        name: userinfo.name,
+        provider: "google",
+        uid: userinfo.sub,
+        avatarUrl: userinfo.picture,
+        access_token: token.access_token,
+        ...token.refresh_token && { refresh_token: token.refresh_token }
+      }
+    }, { upsert: true, returnOriginal: false })).value
 
     const cookieToken = crypto.randomBytes(16).toString("base64")
     await sessions.insertOne({ token: cookieToken, user: user._id })
@@ -89,16 +94,18 @@ async function main() {
     if (!response.ok) throw new Error(response.statusText)
     const me = await response.json()
 
-    const user = (await users.findOneAndReplace({ provider: "discord", uid: me.id }, {
-      name: `${me.username}#${me.discriminator}`,
-      provider: "discord",
-      uid: me.id,
-      avatarUrl: me.avatar
-        ? `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png`
-        : `https://cdn.discordapp.com/embed/avatars/${me.discriminator % 5}.png`,
-      access_token: token.access_token,
-      refresh_token: token.refresh_token
-    }, { upsert: true })).value
+    const user = (await users.findOneAndUpdate({ provider: "discord", uid: me.id }, {
+      $set: {
+        name: `${me.username}#${me.discriminator}`,
+        provider: "discord",
+        uid: me.id,
+        avatarUrl: me.avatar
+          ? `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png`
+          : `https://cdn.discordapp.com/embed/avatars/${me.discriminator % 5}.png`,
+        access_token: token.access_token,
+        ...token.refresh_token && { refresh_token: token.refresh_token }
+      }
+    }, { upsert: true, returnOriginal: false })).value
 
     const cookieToken = crypto.randomBytes(16).toString("base64")
     await sessions.insertOne({ token: cookieToken, user: user._id })
