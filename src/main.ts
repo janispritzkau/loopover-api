@@ -117,6 +117,65 @@ async function main() {
     })
   }))
 
+  app.get("/statistics/:event/:type", asyncHandler(async (req, res) => {
+    const event = req.params.event
+
+    const solvesPerUser: { solves: any[] }[] = await solves.aggregate([
+      { $match: { event } },
+      {
+        $project: {
+          time: 1,
+          user: 1,
+          moves: { $size: "$moves" }
+        }
+      },
+      {
+        $group: {
+          _id: "$user",
+          solves: { $push: "$$ROOT" }
+        }
+      },
+    ]).toArray()
+
+    let totalWeight = 0
+
+    let scores = solvesPerUser.reduce<{ score: number, weight: number }[]>((scores, { solves }) => {
+      solves.forEach((solve: any) => {
+        const score = req.params.type == "moves" ? solve.moves : solve.time / 1000
+
+        const weight = 1 / (2 + solves.length)
+        totalWeight += weight
+
+        scores.push({ score, weight })
+      })
+      return scores
+    }, [])
+
+    if (scores.length < 2) return res.json({ labels: [], data: [] })
+
+    scores.sort((a, b) => a.score - b.score)
+
+    const lim = Math.min(20, Math.ceil(scores.length / 32))
+    if (scores.length > 32) scores = scores.slice(~~(lim / 2), -~~lim)
+
+    const start = Math.floor(scores[0].score)
+    const end = Math.ceil(scores[scores.length - 1].score)
+    const step = Math.round(1 + 6 / scores.length + (end - start) / 32)
+
+    const labels = [...Array(Math.ceil((end - start + step) / step))].map((_, i) => start + i * step)
+
+    const data = labels.map(() => 0)
+    for (const { score, weight } of scores) {
+      const x = score / step - start / step
+      const v = x - ~~x
+      const f = weight / totalWeight
+      data[~~x] += (1 - v) * f
+      data[~~x + Math.ceil(f)] += v * f
+    }
+
+    res.json({ labels, data })
+  }))
+
   app.use((req, res, next) => {
     let match: RegExpMatchArray | null
     if (match = (req.headers.authorization || "").match(/^Bearer (.+)/)) {
