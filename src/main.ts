@@ -155,7 +155,7 @@ async function main() {
 
     scores.sort((a, b) => a.score - b.score)
 
-    const lim = Math.min(20, Math.ceil(scores.length / 32))
+    const lim = Math.min(80, Math.ceil(scores.length / 32))
     if (scores.length > 32) scores = scores.slice(~~(lim / 2), -~~lim)
 
     const start = Math.floor(scores[0].score)
