@@ -155,12 +155,12 @@ async function main() {
 
     scores.sort((a, b) => a.score - b.score)
 
-    const lim = Math.min(80, Math.ceil(scores.length / 32))
+    const lim = Math.ceil(scores.length / 32)
     if (scores.length > 32) scores = scores.slice(~~(lim / 2), -~~lim)
 
-    const start = Math.floor(scores[0].score)
+    const start = Math.floor(scores[0].score * 0.9)
     const end = Math.ceil(scores[scores.length - 1].score)
-    const step = Math.round(1 + 6 / scores.length + (end - start) / 32)
+    const step = Math.round(0.5 + (end - start) / 12)
 
     const labels = [...Array(Math.ceil((end - start + step) / step))].map((_, i) => start + i * step)
 
