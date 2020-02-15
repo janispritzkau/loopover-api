@@ -137,15 +137,11 @@ async function main() {
       },
     ]).toArray()
 
-    let totalWeight = 0
-
     let scores = solvesPerUser.reduce<{ score: number, weight: number }[]>((scores, { solves }) => {
       solves.forEach((solve: any) => {
         const score = req.params.type == "moves" ? solve.moves : solve.time / 1000
 
         const weight = 1 / (2 + solves.length)
-        totalWeight += weight
-
         scores.push({ score, weight })
       })
       return scores
@@ -168,12 +164,12 @@ async function main() {
     for (const { score, weight } of scores) {
       const x = score / step - start / step
       const v = x - ~~x
-      const f = weight / totalWeight
-      data[~~x] += (1 - v) * f
-      data[~~x + Math.ceil(f)] += v * f
+      data[~~x] += (1 - v) * weight
+      data[~~x + Math.ceil(v)] += v * weight
     }
 
-    res.json({ labels, data })
+    const max = data.reduce((a, b) => Math.max(a, b), 0)
+    res.json({ labels, data: data.map(x => x / max) })
   }))
 
   app.use((req, res, next) => {
