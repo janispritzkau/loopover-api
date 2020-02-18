@@ -162,7 +162,7 @@ async function main() {
 
     const data = labels.map(() => 0)
     for (const { score, weight } of scores) {
-      const x = score / step - start / step
+      const x = Math.min(score / step - start / step, labels.length - 1)
       const v = x - ~~x
       data[~~x] += (1 - v) * weight
       data[~~x + Math.ceil(v)] += v * weight
