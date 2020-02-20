@@ -155,7 +155,7 @@ async function main() {
     if (scores.length > 32) scores = scores.slice(~~(lim / 2), -~~lim)
 
     const start = Math.floor(scores[0].score * 0.9)
-    const end = Math.ceil(scores[scores.length - 1].score)
+    const end = Math.ceil(scores[scores.length - 1].score * 1.1)
     const step = Math.round(0.5 + (end - start) / 12)
 
     const labels = [...Array(Math.ceil((end - start + step) / step))].map((_, i) => start + i * step)
@@ -196,12 +196,6 @@ async function main() {
   }))
 
   app.use(express.json({ limit: 1024 * 512 }))
-
-  for await (let solve of solves.find()) {
-    solves.updateOne({ _id: solve._id }, { $set: {
-      moves: solve.moves[0] instanceof Array ? solve.moves : serializeMoves(solve.moves)
-    } })
-  }
 
   app.post("/sync", asyncHandler(async (req, res) => {
     const allSolves = await solves.find({ user: res.locals.uid }).toArray()
