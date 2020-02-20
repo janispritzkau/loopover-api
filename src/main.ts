@@ -197,6 +197,12 @@ async function main() {
 
   app.use(express.json({ limit: 1024 * 512 }))
 
+  for await (let solve of solves.find()) {
+    solves.updateOne({ _id: solve._id }, { $set: {
+      moves: solve.moves[0] instanceof Array ? solve.moves : serializeMoves(solve.moves)
+    } })
+  }
+
   app.post("/sync", asyncHandler(async (req, res) => {
     const allSolves = await solves.find({ user: res.locals.uid }).toArray()
 
@@ -211,6 +217,12 @@ async function main() {
       }
     }
 
+    if (req.headers["api-version"] == null) {
+      sendSolves.forEach(solve => {
+        solve.moves = deserializeMoves(solve.moves)
+      })
+    }
+
     res.json({ missing: [...solveIds], solves: sendSolves })
   }))
 
@@ -220,7 +232,12 @@ async function main() {
       if (typeof solve.startTime != "number") return res.status(400).end()
     }
 
-    solves.insertMany(req.body.map((solve: any) => ({ ...solve, user: res.locals.uid })))
+    solves.insertMany(req.body.map(({ ...solve }: any) => {
+      if (req.headers["api-version"] == null) solve.moves = serializeMoves(solve.moves)
+
+      solve.user = res.locals.uid
+      return solve
+    }))
     res.end()
   }))
 
@@ -231,6 +248,23 @@ async function main() {
   }))
 
   app.listen(PORT)
+}
+
+function serializeMoves(moves: { axis: "row" | "col", index: number, n: number, time: number }[]) {
+  let lastTime = 0
+  return moves.map(move => {
+    const time = move.time! - lastTime
+    lastTime = move.time!
+    return [+(move.axis == "col"), move.index, move.n, time]
+  })
+}
+
+function deserializeMoves(moves: number[][]) {
+  let lastTime = 0
+  return moves.map(move => ({
+    axis: move[0] ? "col" : "row", index: move[1], n: move[2],
+    time: (lastTime += move[3])
+  }))
 }
 
 main()
