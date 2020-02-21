@@ -121,7 +121,7 @@ async function main() {
     const event = req.params.event
 
     const solvesPerUser: { solves: any[] }[] = await solves.aggregate([
-      { $match: { event } },
+      { $match: { event, dnf: { $ne: true } } },
       {
         $project: {
           time: 1,
@@ -151,8 +151,8 @@ async function main() {
 
     scores.sort((a, b) => a.score - b.score)
 
-    const lim = Math.ceil(scores.length / 32)
-    if (scores.length > 32) scores = scores.slice(~~(lim / 2), -~~lim)
+    const lim = Math.ceil(scores.length / 28)
+    if (scores.length > 28) scores = scores.slice(~~(lim * 0.7), -~~lim)
 
     const start = Math.floor(scores[0].score * 0.9)
     const end = Math.ceil(scores[scores.length - 1].score * 1.1)
