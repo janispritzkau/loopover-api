@@ -73,15 +73,18 @@ async function main() {
   }))
 
   app.post("/authenticate/discord", asyncHandler(async (req, res) => {
-    let response = await fetch(`https://discordapp.com/api/oauth2/token?${new URLSearchParams({
-      grant_type: "authorization_code",
-      code: req.query.code,
-      redirect_uri: req.query.redirect_uri
-    })}`, {
+    let response = await fetch("https://discord.com/api/oauth2/token", {
       method: "POST",
       headers: {
-        Authorization: `Basic ${Buffer.from(`${process.env.DISCORD_CLIENT_ID}:${process.env.DISCORD_CLIENT_SECRET}`).toString("base64")}`
-      }
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: `${new URLSearchParams({
+        client_id: process.env.DISCORD_CLIENT_ID!,
+        client_secret: process.env.DISCORD_CLIENT_SECRET!,
+        grant_type: "authorization_code",
+        code: req.query.code,
+        redirect_uri: req.query.redirect_uri
+      })}`
     })
 
     if (!response.ok) throw new Error(response.statusText)
