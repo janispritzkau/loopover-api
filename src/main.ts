@@ -1,5 +1,6 @@
 require("dotenv").config()
 import * as asyncHandler from "express-async-handler"
+import * as querystring from "querystring"
 import { MongoClient } from "mongodb"
 import * as express from "express"
 import * as cors from "cors"
@@ -13,14 +14,15 @@ async function main() {
   app.use(cors())
 
   const mongoClient = await MongoClient.connect("mongodb://localhost:27017", {
-    useUnifiedTopology: true
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 1000
   })
 
   const db = mongoClient.db("loopover")
 
-  const users = await db.createCollection("users")
-  const solves = await db.createCollection("solves")
-  const sessions = await db.createCollection("sessions")
+  const users = db.collection("users")
+  const solves = db.collection("solves")
+  const sessions = db.collection("sessions")
 
   await solves.dropIndexes()
   solves.createIndex({ event: 1 })
@@ -30,10 +32,10 @@ async function main() {
   sessions.createIndex({ token: 1 })
 
   app.post("/authenticate/google", asyncHandler(async (req, res) => {
-    let response = await fetch(`https://oauth2.googleapis.com/token?${new URLSearchParams({
+    let response = await fetch(`https://oauth2.googleapis.com/token?${querystring.stringify({
       grant_type: "authorization_code",
-      code: req.query.code,
-      redirect_uri: req.query.redirect_uri
+      code: req.query.code!.toString(),
+      redirect_uri: req.query.redirect_uri!.toString()
     })}`, {
       method: "POST",
       headers: {
@@ -78,12 +80,12 @@ async function main() {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded"
       },
-      body: `${new URLSearchParams({
+      body: `${querystring.stringify({
         client_id: process.env.DISCORD_CLIENT_ID!,
         client_secret: process.env.DISCORD_CLIENT_SECRET!,
         grant_type: "authorization_code",
-        code: req.query.code,
-        redirect_uri: req.query.redirect_uri
+        code: req.query.code!.toString(),
+        redirect_uri: req.query.redirect_uri!.toString()
       })}`
     })
 

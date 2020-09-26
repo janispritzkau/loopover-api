@@ -5,22 +5,24 @@
   "main": "lib/main.js",
   "scripts": {
     "start": "node .",
+    "dev": "tsc-watch --onSuccess 'node --enable-source-maps .'",
     "build": "tsc"
   },
   "dependencies": {
-    "@types/cors": "^2.8.6",
-    "@types/express": "^4.17.2",
-    "@types/mongodb": "^3.3.15",
-    "@types/node": "^12.12.25",
-    "@types/node-fetch": "^2.5.4",
+    "@types/cors": "^2.8.7",
+    "@types/express": "^4.17.8",
+    "@types/mongodb": "^3.5.27",
+    "@types/node": "^14.11.2",
+    "@types/node-fetch": "^2.5.7",
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "express-async-handler": "^1.1.4",
-    "mongodb": "^3.5.2",
-    "node-fetch": "^2.6.0"
+    "mongodb": "^3.6.2",
+    "node-fetch": "^2.6.1"
   },
   "devDependencies": {
-    "typescript": "^3.7.5"
+    "tsc-watch": "^4.2.9",
+    "typescript": "^3.9.7"
   }
 }

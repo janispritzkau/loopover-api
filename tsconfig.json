@@ -1,11 +1,13 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "module": "commonjs",
+    "target": "ES2019",
+    "module": "CommonJS",
+    "lib": ["ESNext", "ScriptHost"],
     "strict": true,
-    "outDir": "./lib"
+    "sourceMap": true,
+    "outDir": "lib"
   },
   "include": [
-    "./src"
+    "src"
   ]
 }
